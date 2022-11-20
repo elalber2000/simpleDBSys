@@ -55,7 +55,7 @@ public class HeapPageId implements PageId {
     	
     	if (o == null || !(o instanceof HeapPageId))
     		return false;
-    				
+    	
     	HeapPageId hpid = (HeapPageId) o;
     	
         return (hpid.getPageNumber()==pageNumber) && (hpid.getTableId()==tableId);
