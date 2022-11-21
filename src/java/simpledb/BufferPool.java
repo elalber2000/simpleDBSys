@@ -4,6 +4,7 @@ import java.io.*;
 
 import java.util.concurrent.ConcurrentHashMap;
 
+
 /**
  * BufferPool manages the reading and writing of pages into memory from
  * disk. Access methods call into it to retrieve pages, and it fetches
@@ -16,6 +17,42 @@ import java.util.concurrent.ConcurrentHashMap;
  * @Threadsafe, all fields are final
  */
 public class BufferPool {
+	
+	public static class BuffItem{
+		
+	    private long time;
+	    private Page page;
+
+	    public BuffItem(long time, Page page) {
+	        this.time = time;
+	        this.page = page;
+	    }
+	    
+	    public BuffItem(long time) {
+	        this.time = time;
+	    }
+
+	    public String toString() {
+	        return page.toString() + ", " + time;
+	    }
+	    
+	    public long getTime() {
+	    	return time;
+	    }
+	    
+	    public Page getPage() {
+	    	return page;
+	    }
+	    
+	    public void setTime(long time) {
+	    	this.time = time;
+	    }
+	    
+	    public void setPage(Page page) {
+	    	this.page = page;
+	    }
+	}
+	
     /** Bytes per page, including header. */
     private static final int DEFAULT_PAGE_SIZE = 4096;
 
@@ -25,6 +62,9 @@ public class BufferPool {
     other classes. BufferPool should use the numPages argument to the
     constructor instead. */
     public static final int DEFAULT_PAGES = 50;
+    
+    private int numPages;
+    private ConcurrentHashMap<PageId, BuffItem> buffer;
 
     /**
      * Creates a BufferPool that caches up to numPages pages.
@@ -32,7 +72,8 @@ public class BufferPool {
      * @param numPages maximum number of pages in this buffer pool.
      */
     public BufferPool(int numPages) {
-        // some code goes here
+        this.numPages = numPages;
+        buffer = new ConcurrentHashMap<PageId, BuffItem>();
     }
     
     public static int getPageSize() {
@@ -64,10 +105,25 @@ public class BufferPool {
      * @param pid the ID of the requested page
      * @param perm the requested permissions on the page
      */
-    public  Page getPage(TransactionId tid, PageId pid, Permissions perm)
+    public Page getPage(TransactionId tid, PageId pid, Permissions perm)
         throws TransactionAbortedException, DbException {
-        // some code goes here
-        return null;
+    	
+    	if (buffer.containsKey(pid)) {
+    		BuffItem item = buffer.get(pid);
+    		item.setTime(System.currentTimeMillis());
+    		return item.getPage();
+    	}
+    	
+    	Catalog catalog = Database.getCatalog();
+    	DbFile dbfile = catalog.getDatabaseFile(pid.getTableId());
+    	
+    	if (buffer.size() >= numPages)
+    		evictPage();
+    	
+    	Page fileRead = dbfile.readPage(pid);
+    	buffer.put(pid, new BuffItem(System.currentTimeMillis(), fileRead));
+    	
+    	return fileRead;
     }
 
     /**

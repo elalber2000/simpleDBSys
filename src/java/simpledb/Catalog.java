@@ -104,7 +104,6 @@ public class Catalog {
     		if (tables.get(i).getId()==tableid)
     			res = tables.get(i).getTd();
     	}
-    	
         if (res!=null)
         	return res;
         else
