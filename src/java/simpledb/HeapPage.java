@@ -52,8 +52,9 @@ public class HeapPage implements Page {
         tuples = new Tuple[numSlots];
         try{
             // allocate and read the actual records of this page
-            for (int i=0; i<tuples.length; i++)
+            for (int i=0; i<tuples.length; i++) {
                 tuples[i] = readNextTuple(dis,i);
+            }
         }catch(NoSuchElementException e){
             e.printStackTrace();
         }
@@ -66,11 +67,7 @@ public class HeapPage implements Page {
         @return the number of tuples on this page
     */
     private int getNumTuples() { 
-    	//return Math.floor(BufferPool.getPageSize()*8)/(td.getSize()*8+1)
     	return (int)(Math.floor((BufferPool.getPageSize()*8)/(td.getSize()*8+1)));
-        // some code goes here
-        //return 0;
-
     }
 
     /**
@@ -79,9 +76,6 @@ public class HeapPage implements Page {
      */
     private int getHeaderSize() {
         return (int) Math.ceil(this.getNumTuples()/8);
-        // some code goes here
-        //return 0;
-                 
     }
     
     /** Return a view of this page before it was modified
@@ -114,8 +108,6 @@ public class HeapPage implements Page {
      */
     public HeapPageId getId() {
     	return this.pid;
-    // some code goes here
-    //throw new UnsupportedOperationException("implement this");
     }
 
     /**
@@ -123,7 +115,6 @@ public class HeapPage implements Page {
      */
     private Tuple readNextTuple(DataInputStream dis, int slotId) throws NoSuchElementException {
         // if associated bit is not set, read forward to the next tuple, and
-        // return null.
         if (!isSlotUsed(slotId)) {
             for (int i=0; i<td.getSize(); i++) {
                 try {
@@ -148,7 +139,6 @@ public class HeapPage implements Page {
             e.printStackTrace();
             throw new NoSuchElementException("parsing error!");
         }
-
         return t;
     }
 
@@ -294,14 +284,6 @@ public class HeapPage implements Page {
     	}
     	
     	return res;
-    	
-    	//System.out.println(Base64.getEncoder().encodeToString(header).length());
-    	//System.out.println("" + header[0][0]);
-    	//System.out.println(tuples.length);
-    	//System.out.println(header.toString());
-    	
-        // some code goes here
-        //return 0;
     }
 
     /**
@@ -326,8 +308,12 @@ public class HeapPage implements Page {
      * (note that this iterator shouldn't return tuples in empty slots!)
      */
     public Iterator<Tuple> iterator() {
-        // some code goes here
-        return null;
+    	ArrayList<Tuple> tuplist = new ArrayList<Tuple>();
+        for(int i=0; i<tuples.length; i++) {
+        	if(tuples[i]!=null)
+        		tuplist.add(tuples[i]);
+        }
+        return tuplist.iterator();
     }
 
 }

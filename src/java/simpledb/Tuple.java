@@ -32,8 +32,6 @@ public class Tuple implements Serializable {
     		fieldArray = new Field[td.numFields()];
     		this.td = td;
     	}
-    	
-    	System.out.println(fieldArray);
     }
 
     /**
