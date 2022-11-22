@@ -65,9 +65,11 @@ public class HeapPage implements Page {
     /** Retrieve the number of tuples on this page.
         @return the number of tuples on this page
     */
-    private int getNumTuples() {        
+    private int getNumTuples() { 
+    	//return Math.floor(BufferPool.getPageSize()*8)/(td.getSize()*8+1)
+    	return (int)(Math.floor((BufferPool.getPageSize()*8)/(td.getSize()*8+1)));
         // some code goes here
-        return 0;
+        //return 0;
 
     }
 
@@ -75,10 +77,10 @@ public class HeapPage implements Page {
      * Computes the number of bytes in the header of a page in a HeapFile with each tuple occupying tupleSize bytes
      * @return the number of bytes in the header of a page in a HeapFile with each tuple occupying tupleSize bytes
      */
-    private int getHeaderSize() {        
-        
+    private int getHeaderSize() {
+        return (int) Math.ceil(this.getNumTuples()/8);
         // some code goes here
-        return 0;
+        //return 0;
                  
     }
     
@@ -111,8 +113,9 @@ public class HeapPage implements Page {
      * @return the PageId associated with this page.
      */
     public HeapPageId getId() {
+    	return this.pid;
     // some code goes here
-    throw new UnsupportedOperationException("implement this");
+    //throw new UnsupportedOperationException("implement this");
     }
 
     /**
@@ -281,16 +284,33 @@ public class HeapPage implements Page {
      * Returns the number of empty slots on this page.
      */
     public int getNumEmptySlots() {
+    	
+    	int res = 0;
+    	
+    	for(int i = 0; i < tuples.length; i++) {
+    		if(isSlotUsed(i) == false) {
+    			res++;
+    		}
+    	}
+    	
+    	return res;
+    	
+    	//System.out.println(Base64.getEncoder().encodeToString(header).length());
+    	//System.out.println("" + header[0][0]);
+    	//System.out.println(tuples.length);
+    	//System.out.println(header.toString());
+    	
         // some code goes here
-        return 0;
+        //return 0;
     }
 
     /**
      * Returns true if associated slot on this page is filled.
      */
     public boolean isSlotUsed(int i) {
-        // some code goes here
-        return false;
+    	int byteNo = (int) Math.floor(i/8);
+    	int posInByte = i%8;
+    	return (header[byteNo] >> posInByte & 1) == 1;
     }
 
     /**
