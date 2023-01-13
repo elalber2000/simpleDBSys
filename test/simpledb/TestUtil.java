@@ -156,6 +156,7 @@ public class TestUtil {
         throws TransactionAbortedException, DbException {
 
         if (it.hasNext()) return false;
+        
 
         try {
             Tuple t = it.next();

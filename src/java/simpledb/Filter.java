@@ -6,6 +6,10 @@ import java.util.*;
  * Filter is an operator that implements a relational select.
  */
 public class Filter extends Operator {
+	
+	Predicate pred;
+	OpIterator child;
+	
 
     private static final long serialVersionUID = 1L;
 
@@ -19,30 +23,30 @@ public class Filter extends Operator {
      *            The child operator
      */
     public Filter(Predicate p, OpIterator child) {
-        // some code goes here
+        this.pred = p;
+        this.child = child;
     }
 
     public Predicate getPredicate() {
-        // some code goes here
-        return null;
+        return pred;
     }
 
     public TupleDesc getTupleDesc() {
-        // some code goes here
-        return null;
+    	return child.getTupleDesc();
     }
 
     public void open() throws DbException, NoSuchElementException,
             TransactionAbortedException {
-        // some code goes here
+    	super.open();
+        child.open();
     }
 
     public void close() {
-        // some code goes here
+        child.close();
     }
 
     public void rewind() throws DbException, TransactionAbortedException {
-        // some code goes here
+        child.rewind();
     }
 
     /**
@@ -56,19 +60,29 @@ public class Filter extends Operator {
      */
     protected Tuple fetchNext() throws NoSuchElementException,
             TransactionAbortedException, DbException {
-        // some code goes here
-        return null;
+    	Tuple res = null;
+    	boolean cond = false;
+    	
+        while(child.hasNext() && !cond) {
+        	res = child.next();
+        	if(pred.filter(res))
+        		cond = true;
+        }
+        
+        if(!cond)
+        	res = null;
+        
+        return res;
     }
 
     @Override
     public OpIterator[] getChildren() {
-        // some code goes here
-        return null;
+    	return new OpIterator[] { this.child };
     }
 
     @Override
     public void setChildren(OpIterator[] children) {
-        // some code goes here
+    	this.child = children[0];
     }
 
 }

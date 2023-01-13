@@ -10,9 +10,8 @@ public class RecordId implements Serializable {
 
     private static final long serialVersionUID = 1L;
 
-    private PageId pid;
-    private int tupleNumber;
-    
+    PageId pageId;
+    int tupleNo;
     /**
      * Creates a new RecordId referring to the specified PageId and tuple
      * number.
@@ -23,22 +22,25 @@ public class RecordId implements Serializable {
      *            the tuple number within the page.
      */
     public RecordId(PageId pid, int tupleno) {
-        this.pid = pid;
-        tupleNumber = tupleno;
+        // some code goes here
+		this.pageId = pid;
+        this.tupleNo = tupleno;
     }
 
     /**
      * @return the tuple number this RecordId references.
      */
     public int getTupleNumber() {
-        return tupleNumber;
+        // some code goes here
+         return tupleNo;
     }
 
     /**
      * @return the page id this RecordId references.
      */
     public PageId getPageId() {
-        return pid;
+        // some code goes here
+        return pageId;
     }
 
     /**
@@ -49,14 +51,13 @@ public class RecordId implements Serializable {
      */
     @Override
     public boolean equals(Object o) {
-    	
-    	if (o == null || !(o instanceof RecordId))
-    		return false;
-    	
-    	RecordId rid = (RecordId) o;
-    	
-        return (rid.getPageId().equals(pid)) && (rid.getTupleNumber()==tupleNumber);
-    }
+        // some code goes here
+        if (o instanceof RecordId) {
+            RecordId rid = (RecordId) o;
+            return rid.tupleNo == this.tupleNo && rid.pageId.equals(this.pageId);
+        }
+        return false;
+		}
 
     /**
      * You should implement the hashCode() so that two equal RecordId instances
@@ -66,12 +67,9 @@ public class RecordId implements Serializable {
      */
     @Override
     public int hashCode() {
-    	return pid.hashCode()+tupleNumber;
-
-    }
+        // some code goes here
+           return (String.valueOf(pageId.hashCode()) + tupleNo).hashCode();
     
-    public String toString() {
-    	return "[" + pid + "] " + tupleNumber;
     }
 
 }

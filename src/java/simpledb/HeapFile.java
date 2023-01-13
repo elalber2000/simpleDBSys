@@ -1,7 +1,12 @@
 package simpledb;
 
-import java.io.*;
-import java.util.*;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.IOException;
+import java.io.RandomAccessFile;
+import java.util.ArrayList;
+import java.util.Iterator;
+import java.util.NoSuchElementException;
 
 /**
  * HeapFile is an implementation of a DbFile that stores a collection of tuples
@@ -14,10 +19,9 @@ import java.util.*;
  * @author Sam Madden
  */
 public class HeapFile implements DbFile {
+	 private final File dbFile;
+	 private final TupleDesc tupleDesc;
 
-	private File file;
-    private TupleDesc td;
-	
     /**
      * Constructs a heap file backed by the specified file.
      * 
@@ -26,8 +30,9 @@ public class HeapFile implements DbFile {
      *            file.
      */
     public HeapFile(File f, TupleDesc td) {
-    	this.file = f;
-    	this.td = td;
+        // some code goes here
+		this.dbFile = f;
+		this.tupleDesc = td;
     }
 
     /**
@@ -36,7 +41,8 @@ public class HeapFile implements DbFile {
      * @return the File backing this HeapFile on disk.
      */
     public File getFile() {
-    	return file;
+        // some code goes here
+        return dbFile;
     }
 
     /**
@@ -49,8 +55,9 @@ public class HeapFile implements DbFile {
      * @return an ID uniquely identifying this HeapFile.
      */
     public int getId() {
-    	return file.getAbsoluteFile().hashCode();
-    }
+        // some code goes here
+        return dbFile.getAbsoluteFile().hashCode();
+		}
 
     /**
      * Returns the TupleDesc of the table stored in this DbFile.
@@ -58,39 +65,30 @@ public class HeapFile implements DbFile {
      * @return TupleDesc of this DbFile.
      */
     public TupleDesc getTupleDesc() {
-    	return td;
-    }
+        // some code goes here
+        return tupleDesc;
+		}
 
-    // see DbFile.java for javadoc
-    public Page readPage(PageId pid)  {
-    	
-    	int pgSize = BufferPool.getPageSize();
-    	HeapPage res;
-    	
-    	try {
-        	RandomAccessFile raf = new RandomAccessFile(file, "r");
-        	raf.seek(pgSize*pid.getPageNumber());
-        	byte[] fileInBytes = new byte[pgSize];
-        	raf.read(fileInBytes);
-        	raf.close();
-        	
-        	HeapPageId hp = new HeapPageId(this.getId(), pid.getPageNumber());
-        	res = new HeapPage(hp, fileInBytes);
-        	
-    	} catch(FileNotFoundException e) {
-    		System.out.println("FILE NOT FOUND");
-    		res = null;
-    	} catch(IOException e) {
-    		System.out.println("IO EXCEPTION");
-    		res = null;
-    	}
-    	
-    	return (Page) res;
+    // see DbFile.java for javadocs
+    public Page readPage(PageId pid) {
+        // some code goes here
+        int tableId = pid.getTableId();
+    int pgNo = pid.getPageNumber();
+    byte[] rawPgData = HeapPage.createEmptyPageData();
+
+    // random access read from disk
+    try {
+      FileInputStream in = new FileInputStream(dbFile);
+      in.skip(pgNo * BufferPool.getPageSize());
+      in.read(rawPgData);
+      return new HeapPage(new HeapPageId(tableId, pgNo), rawPgData);
+    } catch (IOException e) {
+      throw new IllegalArgumentException("Heap file I/O error");
+    }
     }
 
     // see DbFile.java for javadocs
     public void writePage(Page page) throws IOException {
-    	
         // some code goes here
         // not necessary for lab1
     }
@@ -99,7 +97,9 @@ public class HeapFile implements DbFile {
      * Returns the number of pages in this HeapFile.
      */
     public int numPages() {
-        return (int) file.length()/BufferPool.getPageSize();
+        // some code goes here
+        int fileSize = (int) dbFile.length();
+		return fileSize / BufferPool.getPageSize();
     }
 
     // see DbFile.java for javadocs
@@ -119,11 +119,78 @@ public class HeapFile implements DbFile {
     }
 
     // see DbFile.java for javadocs
-    public DbFileIterator iterator(TransactionId tid) {
-    	
-    	HeapFileIterator hfi = new HeapFileIterator(tid, this);
-    	
-    	return hfi;
+ private class HeapFileIterator implements DbFileIterator {
+
+    private Integer pageCursor;
+    private Iterator<Tuple> tupleIterator;
+    private final TransactionId transactionId;
+    private final int tableId;
+    private final int numPages;
+
+    public HeapFileIterator(TransactionId tid) {
+      this.pageCursor = null;
+      this.tupleIterator = null;
+      this.transactionId = tid;
+      this.tableId = getId();
+      this.numPages = numPages();
     }
 
+    private Iterator<Tuple> getTupleIterator(int pageNumber) throws TransactionAbortedException, DbException {
+      PageId pid = new HeapPageId(tableId, pageNumber);
+      return ((HeapPage) Database.getBufferPool().getPage(transactionId, pid, Permissions.READ_ONLY)).iterator();
+    }
+
+    @Override
+    public void open() throws DbException, TransactionAbortedException {
+      pageCursor = 0;
+      tupleIterator = getTupleIterator(pageCursor);
+    }
+
+    @Override
+    public boolean hasNext() throws DbException, TransactionAbortedException {
+      if (pageCursor != null) {
+        while (pageCursor < numPages - 1) {
+          if (tupleIterator.hasNext()) {
+            return true;
+          } else {
+            pageCursor += 1;
+            tupleIterator = getTupleIterator(pageCursor);
+          }
+        }
+        return tupleIterator.hasNext();
+      } else {
+        return false;
+      }
+    }
+
+    @Override
+    public Tuple next() throws DbException, TransactionAbortedException, NoSuchElementException {
+      if (hasNext()) {
+        return tupleIterator.next();
+      }
+      throw new NoSuchElementException("HeapFileIterator error: no more elements");
+    }
+
+    @Override
+    public void rewind() throws DbException, TransactionAbortedException {
+      close();
+      open();
+    }
+
+    @Override
+    public void close() {
+      pageCursor = null;
+      tupleIterator = null;
+    }
+
+  }
+
+  // see DbFile.java for javadocs
+  public DbFileIterator iterator(TransactionId tid) {
+    // some code goes here
+    return new HeapFileIterator(tid);
+  }
+
 }
+
+
