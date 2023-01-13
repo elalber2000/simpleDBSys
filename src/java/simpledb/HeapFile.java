@@ -15,9 +15,8 @@ import java.util.*;
  */
 public class HeapFile implements DbFile {
 
-	private File f;
-    final TupleDesc td;
-    private int id;
+	private File file;
+    private TupleDesc td;
 	
     /**
      * Constructs a heap file backed by the specified file.
@@ -27,10 +26,8 @@ public class HeapFile implements DbFile {
      *            file.
      */
     public HeapFile(File f, TupleDesc td) {
-    	this.f = f;
+    	this.file = f;
     	this.td = td;
-    	this.id = this.f.getAbsoluteFile().hashCode();
-    	
     }
 
     /**
@@ -39,7 +36,7 @@ public class HeapFile implements DbFile {
      * @return the File backing this HeapFile on disk.
      */
     public File getFile() {
-    	return this.f;
+    	return file;
     }
 
     /**
@@ -52,7 +49,7 @@ public class HeapFile implements DbFile {
      * @return an ID uniquely identifying this HeapFile.
      */
     public int getId() {
-    	return id;
+    	return file.getAbsoluteFile().hashCode();
     }
 
     /**
@@ -71,7 +68,7 @@ public class HeapFile implements DbFile {
     	HeapPage res;
     	
     	try {
-        	RandomAccessFile raf = new RandomAccessFile(this.f, "r");
+        	RandomAccessFile raf = new RandomAccessFile(file, "r");
         	raf.seek(pgSize*pid.getPageNumber());
         	byte[] fileInBytes = new byte[pgSize];
         	raf.read(fileInBytes);
@@ -102,7 +99,7 @@ public class HeapFile implements DbFile {
      * Returns the number of pages in this HeapFile.
      */
     public int numPages() {
-        return (int) this.f.length()/BufferPool.getPageSize();
+        return (int) file.length()/BufferPool.getPageSize();
     }
 
     // see DbFile.java for javadocs

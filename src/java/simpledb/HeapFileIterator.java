@@ -13,16 +13,18 @@ public class HeapFileIterator implements DbFileIterator {
 	private HeapPage currentHeapPage;
 	private HeapPageId currentHPId;
 	private Iterator<Tuple> currentPageIt;
+	private TransactionId tid;
 	
 	
 	public HeapFileIterator(TransactionId tid, HeapFile hf) {
 		currentPage = -1;
 		this.hf = hf;
+		this.tid = tid;
 	}
 	
 	public void open() throws DbException {
-		this.currentHPId = new HeapPageId(hf.getId(), currentPage);
-		this.currentPage = 0;
+		currentPage = 0;
+		this.currentHPId = new HeapPageId(this.hf.getId(), currentPage);
 		
 		try {
     		File f = hf.getFile();
@@ -33,6 +35,7 @@ public class HeapFileIterator implements DbFileIterator {
     		fis.close();
     		this.currentHeapPage = new HeapPage(this.currentHPId, fileInBytes);
     		this.currentPageIt = this.currentHeapPage.iterator();
+    		this.currentPage = 0;
 		}
 		catch(FileNotFoundException e) {
 			throw new DbException(e.toString());
@@ -48,11 +51,11 @@ public class HeapFileIterator implements DbFileIterator {
 		if (this.currentPage == -1)
 			return false;
 
-		while(this.currentPage < hf.numPages()) {
+		while(this.currentPage < this.hf.numPages()) {
 			if(currentPageIt.hasNext() == false) {
 				this.currentPage++;
 				
-				this.currentHPId = new HeapPageId(hf.getId(), this.currentPage);
+				this.currentHPId = new HeapPageId(this.hf.getId(), this.currentPage);
 				
 	    		try {
 	        		File f = hf.getFile();
@@ -90,17 +93,24 @@ public class HeapFileIterator implements DbFileIterator {
 		if(this.currentPage == -1) {
 			throw new DbException("NOT OPENED");
 		}
-
 		
-		return (Tuple)this.currentPageIt.next();
+		return (Tuple) this.currentPageIt.next();
 	}
 	
 	public void rewind() {
-		this.currentPage = 0;
+		//this.currentPage = 0;
+		this.close();
+		try {
+			this.open();
+		} catch (DbException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
 	}
 	
 	public void close() {
 		this.currentPage = -1;
+		this.currentPageIt = null;
 	}
 	
 }

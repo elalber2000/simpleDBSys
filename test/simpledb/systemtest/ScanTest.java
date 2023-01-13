@@ -42,6 +42,7 @@ public class ScanTest extends SimpleDbTestBase {
                 new int[]{0, 1, 2, 511, 512, 513, 1023, 1024, 1025, 4096 + r.nextInt(4096)};
         validateScan(columnSizes, rowSizes);
     }
+    
 
     /** Test that rewinding a SeqScan iterator works. */
     @Test public void testRewind() throws IOException, DbException, TransactionAbortedException {
