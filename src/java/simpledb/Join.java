@@ -12,6 +12,8 @@ public class Join extends Operator {
     JoinPredicate pred;
     OpIterator child1;
     OpIterator child2;
+    Tuple next1;
+    Tuple next2;
 
     /**
      * Constructor. Accepts two children to join and the predicate to join them
@@ -28,6 +30,8 @@ public class Join extends Operator {
         this.pred = p;
         this.child1 = child1;
         this.child2 = child2;
+        this.next1 = null;
+        this.next2 = null;
     }
 
     public JoinPredicate getJoinPredicate() {
@@ -97,7 +101,44 @@ public class Join extends Operator {
      */
     protected Tuple fetchNext() throws TransactionAbortedException, DbException {
     	
-    	Tuple elem1, elem2;
+    	Tuple res = null;
+    	
+        while(child1.hasNext() || next1 != null) {
+            if(next1 == null)
+                next1 = child1.next();
+
+            while(child2.hasNext()) {
+                next2 = child2.next();
+                
+                if (pred.filter(next1, next2)) {
+                    res = merge(next1, next2);
+                    break;
+                }
+            }
+
+            if (res != null) break;
+            next1 = null;
+            child2.rewind();
+        }
+        return res;
+    }
+    
+    private Tuple merge(Tuple tp1, Tuple tp2) {
+    	
+    	Tuple res = new Tuple(getTupleDesc());
+    	int size1 = next1.getTupleDesc().numFields();
+        int size2 = next2.getTupleDesc().numFields();
+        
+        for(int i = 0; i < size1; i++)  
+            res.setField(i, next1.getField(i));
+        for(int i = 0; i < size2; i++)      				
+            res.setField(size1 + i, next2.getField(i));
+        
+    	return res;
+    	
+    }
+    	
+    	/*Tuple elem1, elem2;
     	TupleDesc td = TupleDesc.merge(child1.getTupleDesc(), child2.getTupleDesc());
     	int size1, size2;
     	
@@ -125,7 +166,8 @@ public class Join extends Operator {
         			System.out.println(elem1);
         			System.out.println(elem2);
         			System.out.println(res+"\n");
-        			cond = true;
+        			
+        			//cond = true;
         		}
         	}
         }
@@ -133,8 +175,7 @@ public class Join extends Operator {
         if(!cond)
         	res = null;
         
-        return res;
-    }
+        return res;*/
 
     @Override
     public OpIterator[] getChildren() {
