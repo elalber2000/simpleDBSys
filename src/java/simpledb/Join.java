@@ -117,6 +117,7 @@ public class Join extends Operator {
             }
 
             if (res != null) break;
+            
             next1 = null;
             child2.rewind();
         }
@@ -137,45 +138,6 @@ public class Join extends Operator {
     	return res;
     	
     }
-    	
-    	/*Tuple elem1, elem2;
-    	TupleDesc td = TupleDesc.merge(child1.getTupleDesc(), child2.getTupleDesc());
-    	int size1, size2;
-    	
-    	Tuple res = null;
-    	boolean cond = false;
-    	
-    	while(child1.hasNext() && !cond) {
-    		elem1 = child1.next();
-        	while(child2.hasNext() && !cond) {
-        		elem2 = child2.next();
-        		if(pred.filter(elem1, elem2)) {
-        			
-        			cond = true;
-        			res = new Tuple(td);
-        			size1 = elem1.getTupleDesc().numFields();
-        			size2 = elem2.getTupleDesc().numFields();
-        			
-        			for(int i = 0; i<size1; i++) {
-        				res.setField(i, elem1.getField(i));
-        			}
-        			for(int i = size1; i<size1+size2; i++) {
-        				res.setField(i, elem2.getField(i-size1));
-        			}
-        			
-        			System.out.println(elem1);
-        			System.out.println(elem2);
-        			System.out.println(res+"\n");
-        			
-        			//cond = true;
-        		}
-        	}
-        }
-        
-        if(!cond)
-        	res = null;
-        
-        return res;*/
 
     @Override
     public OpIterator[] getChildren() {
