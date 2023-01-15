@@ -16,6 +16,7 @@ public class Aggregate extends Operator {
 	private int afield;
 	private Aggregator agg;
 	private OpIterator iterator;
+	private String groupFieldName;
 
 	/**
 	 * Constructor.
@@ -46,8 +47,11 @@ public class Aggregate extends Operator {
 
 		if(aggType == Type.INT_TYPE)     		
 			agg = new IntegerAggregator(gfield, grType, afield, aop);
-		else if (aggType == Type.STRING_TYPE) 
+		else 
 			agg = new StringAggregator(gfield, grType, afield, aop);
+		
+		if (gfield != Aggregator.NO_GROUPING)
+			groupFieldName = getTupleDesc().getFieldName(gfield);
 	}
 
 	/**
@@ -66,12 +70,7 @@ public class Aggregate extends Operator {
 	 * */
 	public String groupFieldName() {
 
-		String res = null;
-
-		if (gfield != Aggregator.NO_GROUPING)
-			res = child.getTupleDesc().getFieldName(gfield);
-
-		return res;
+		return groupFieldName;
 	}
 
 	/**
@@ -86,7 +85,7 @@ public class Aggregate extends Operator {
 	 *         tuples
 	 * */
 	public String aggregateFieldName() {
-		return child.getTupleDesc().getFieldName(afield);
+		return  getTupleDesc().getFieldName(afield);
 	}
 
 	/**
@@ -105,9 +104,8 @@ public class Aggregate extends Operator {
 		super.open();
 		child.open();
 
-		while(child.hasNext()) {
+		while(child.hasNext())
 			agg.mergeTupleIntoGroup(child.next());
-		}
 
 		iterator = agg.iterator();
 		iterator.open();
@@ -121,11 +119,13 @@ public class Aggregate extends Operator {
 	 * aggregate. Should return null if there are no more tuples.
 	 */
 	protected Tuple fetchNext() throws TransactionAbortedException, DbException {
+		
+		Tuple res = null;
 
 		if(iterator.hasNext()) 
-			return iterator.next();
+			res = iterator.next();
 
-		return null;
+		return res;
 
 	}
 
@@ -147,8 +147,8 @@ public class Aggregate extends Operator {
 	 */
 	public TupleDesc getTupleDesc() {
 		
-		TupleDesc td = child.getTupleDesc();
-		String aname = td.getFieldName(afield);
+		TupleDesc childtd = child.getTupleDesc();
+		String aname = childtd.getFieldName(afield);
 
 		Type[] types = new Type[afield == Aggregator.NO_GROUPING ? 1 : 2];
 		String[] names = new String[afield == Aggregator.NO_GROUPING ? 1 : 2];
@@ -158,13 +158,13 @@ public class Aggregate extends Operator {
 			fieldName = nameOfAggregatorOp(aop) + "(" + aname + ")";
 
 		if(afield == Aggregator.NO_GROUPING){
-			types[0] = td.getFieldType(afield);
+			types[0] = childtd.getFieldType(afield);
 			names[0] = fieldName;
 		} else {
 
-			types[0] = td.getFieldType(gfield);
-			types[1] = td.getFieldType(afield);
-			names[0] = td.getFieldName(gfield);
+			types[0] = childtd.getFieldType(gfield);
+			types[1] = childtd.getFieldType(afield);
+			names[0] = childtd.getFieldName(gfield);
 			names[1] = fieldName;
 		}
 		
@@ -173,7 +173,9 @@ public class Aggregate extends Operator {
 
 	public void close() {
 		super.close();
+		
 		iterator.close();
+		
 		child.close();
 	}
 

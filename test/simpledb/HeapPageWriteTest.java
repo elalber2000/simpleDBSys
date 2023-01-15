@@ -61,7 +61,7 @@ public class HeapPageWriteTest extends SimpleDbTestBase {
 
             // loop through the iterator to ensure that the tuple actually exists
             // on the page
-            Iterator<Tuple >it = page.iterator();
+            Iterator<Tuple> it = page.iterator();
             boolean found = false;
             while (it.hasNext()) {
                 Tuple tup = it.next();

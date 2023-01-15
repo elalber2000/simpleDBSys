@@ -245,8 +245,11 @@ public class HeapPage implements Page {
      * @param t The tuple to delete
      */
     public void deleteTuple(Tuple t) throws DbException {
-        // some code goes here
-        // not necessary for lab1
+    	if(isSlotUsed(t.getRecordId().getTupleNumber()) && pid.equals(t.getRecordId().getPageId()) ) {
+    		markSlotUsed(t.getRecordId().getTupleNumber(), false);
+    	} else {
+    		throw new DbException("Tuple not found");
+    	}
     }
 
     /**
@@ -257,8 +260,21 @@ public class HeapPage implements Page {
      * @param t The tuple to add.
      */
     public void insertTuple(Tuple t) throws DbException {
-        // some code goes here
-        // not necessary for lab1
+    	
+    	boolean cond = false;
+    	
+    	if(getNumEmptySlots() == 0 || !td.equals(t.getTupleDesc()))
+    		throw new DbException("no empty slots");
+    	else {
+	    	for (int i = 0 ; i<numSlots && !cond ; i++) {
+	    		if(!isSlotUsed(i)) {
+	    			tuples[i] = t;
+	    			tuples[i].setRecordId(new RecordId(pid, i));
+	    			markSlotUsed(i, true);
+	    			cond = true;
+	    		}
+	    	}
+    	}
     }
 
     /**
@@ -266,17 +282,21 @@ public class HeapPage implements Page {
      * that did the dirtying
      */
     public void markDirty(boolean dirty, TransactionId tid) {
-        // some code goes here
-	// not necessary for lab1
+    	this.dirty = dirty;
+        this.dirtyby = tid;
     }
 
     /**
      * Returns the tid of the transaction that last dirtied this page, or null if the page is not dirty
      */
     public TransactionId isDirty() {
-        // some code goes here
-	// Not necessary for lab1
-        return null;      
+    	
+    	TransactionId res = null;
+    	
+    	if(dirty)
+    		res = dirtyby;
+    	
+    	return res;
     }
 
     /**
@@ -308,8 +328,15 @@ public class HeapPage implements Page {
      * Abstraction to fill or clear a slot on this page.
      */
     private void markSlotUsed(int i, boolean value) {
-        // some code goes here
-        // not necessary for lab1
+    	
+    	int mask = 1 << (i % Byte.SIZE);
+    	int max_bit = (int) Math.pow(2, 8);
+    	
+    	if(value)
+    		header[i/8] = (byte) (header[i/8] | mask);
+    	else
+    		header[i/8] = (byte) (header[i/8] & (max_bit-1)-mask);
+    		
     }
 
     /**

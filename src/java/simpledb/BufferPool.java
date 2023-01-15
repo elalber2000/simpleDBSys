@@ -5,7 +5,10 @@ import java.io.*;
 import java.util.ArrayList;
 import java.util.Enumeration;
 import java.util.List;
+import java.util.Map.Entry;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentHashMap.KeySetView;
 
 /**
  * BufferPool manages the reading and writing of pages into memory from
@@ -153,8 +156,10 @@ public class BufferPool {
      */
     public void insertTuple(TransactionId tid, int tableId, Tuple t)
         throws DbException, IOException, TransactionAbortedException {
-        // some code goes here
-        // not necessary for lab1
+    	
+    	ArrayList<Page> pageList = Database.getCatalog().getDatabaseFile(tableId).insertTuple(tid, t);
+    	bufferPool.putAll(pageList);
+    	
     }
 
     /**
@@ -172,8 +177,11 @@ public class BufferPool {
      */
     public  void deleteTuple(TransactionId tid, Tuple t)
         throws DbException, IOException, TransactionAbortedException {
-        // some code goes here
-        // not necessary for lab1
+    	
+    	int tableId = t.getRecordId().getPageId().getTableId();
+    	ArrayList<Page> pageList = Database.getCatalog().getDatabaseFile(tableId).deleteTuple(tid, t);
+    	bufferPool.putAll(pageList);
+    	
     }
 
     /**
@@ -182,9 +190,11 @@ public class BufferPool {
      *     break simpledb if running in NO STEAL mode.
      */
     public synchronized void flushAllPages() throws IOException {
-        // some code goes here
-        // not necessary for lab1
-
+    	ArrayList<PageId> pids = bufferPool.pidList();
+    	
+    	for(int i=0; i<pids.size(); i++) {
+    		flushPage(pids.get(i));
+    	}
     }
 
     /** Remove the specific page id from the buffer pool.
@@ -197,16 +207,22 @@ public class BufferPool {
     */
     public synchronized void discardPage(PageId pid) {
         // some code goes here
-        // not necessary for lab1
+    	bufferPool.remove(pid);
     }
 
     /**
      * Flushes a certain page to disk
      * @param pid an ID indicating the page to flush
      */
-    private synchronized  void flushPage(PageId pid) throws IOException {
-        // some code goes here
-        // not necessary for lab1
+    private synchronized void flushPage(PageId pid) throws IOException {
+    	
+    	HeapFile hf = (HeapFile) Database.getCatalog().getDatabaseFile(pid.getTableId());
+    	HeapPage hp = (HeapPage) bufferPool.get(pid);
+    	
+    	if(hp.isDirty()==null) {
+    		hf.writePage(hp);
+    		hp.markDirty(false, null);
+    	}
     }
 
     /** Write all pages of the specified transaction to disk.
@@ -221,8 +237,6 @@ public class BufferPool {
      * Flushes the page to disk to ensure dirty pages are updated on disk.
      */
     private synchronized  void evictPage() throws DbException {
-        // some code goes here
-        // not necessary for lab1
 		Page pg = bufferPool.evictPage();
 		PageId pid = pg.getId();
 		try {
@@ -247,7 +261,7 @@ public class BufferPool {
       this.pageIdToPage = new ConcurrentHashMap<>(size);
     }
 
-    public boolean containsKey(PageId id) {
+	public boolean containsKey(PageId id) {
       return pageIdToPage.containsKey(id);
     }
 
@@ -285,6 +299,25 @@ public class BufferPool {
         return pageBuffer.get(0);
       }
       return null;
+    }
+    
+    public void putAll(ArrayList<Page> pageList) {
+    	Page p;
+    	for(int i=0; i<pageList.size(); i++) {
+    		p = pageList.get(i); 
+    		put(p.getId(), p);
+    	}
+	}
+    
+    public ArrayList<PageId> pidList() {
+    	
+    	ArrayList<PageId> res = new ArrayList<PageId>();
+
+    	for(Entry<PageId, Page> i : pageIdToPage.entrySet()) {
+    		res.add(i.getKey());
+    	}
+    	
+    	return res;
     }
 
   }
