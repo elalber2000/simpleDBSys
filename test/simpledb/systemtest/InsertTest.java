@@ -45,6 +45,7 @@ public class InsertTest extends SimpleDbTestBase {
         // As part of a different transaction, scan the table
         Database.getBufferPool().transactionComplete(tid);
         Database.getBufferPool().flushAllPages();
+        System.out.println(destination.toString());
         SystemTestUtil.matchTuples(destination, sourceTuples);
     }
 

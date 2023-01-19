@@ -10,6 +10,11 @@ public class Delete extends Operator {
 
     private static final long serialVersionUID = 1L;
 
+    TransactionId ti;
+    OpIterator child;
+    TupleDesc countTD;
+    int status;
+    
     /**
      * Constructor specifying the transaction that this delete belongs to as
      * well as the child to read from.
@@ -20,24 +25,34 @@ public class Delete extends Operator {
      *            The child operator from which to read tuples for deletion
      */
     public Delete(TransactionId t, OpIterator child) {
-        // some code goes here
+        this.ti = t;
+        this.child = child;
+        this.countTD = new TupleDesc(new Type[] {Type.INT_TYPE});
+        status = -1;
     }
 
     public TupleDesc getTupleDesc() {
-        // some code goes here
-        return null;
+        return countTD;
     }
 
     public void open() throws DbException, TransactionAbortedException {
-        // some code goes here
+        super.open();
+        child.open();
+        status = 0;
     }
 
-    public void close() {
-        // some code goes here
+    public void close() {        
+    	super.close();
+    	child.close();
+    	status = -1;
     }
 
     public void rewind() throws DbException, TransactionAbortedException {
-        // some code goes here
+        if(status == -1) {
+        	throw new DbException("Not yet opened!");
+        }
+        child.rewind();
+        status = 0;
     }
 
     /**
@@ -50,19 +65,38 @@ public class Delete extends Operator {
      * @see BufferPool#deleteTuple
      */
     protected Tuple fetchNext() throws TransactionAbortedException, DbException {
-        // some code goes here
-        return null;
+        if(status == 1) return null;
+    	if(status == -1) { throw new DbException("Not yet opened!"); }
+        
+        int noOfInsertions = 0;
+        
+        try {
+        	while(child.hasNext()) {
+        		Tuple t = child.next();
+        		System.out.println(t);
+        		Database.getBufferPool().deleteTuple(ti, t);;
+        		noOfInsertions++;
+        	}
+        }
+        catch (IOException e) {
+        	throw new DbException(e.toString());
+        }
+        
+        status = 1;
+        
+        Tuple toRet = new Tuple(countTD);
+        toRet.setField(0, new IntField(noOfInsertions));
+        return toRet;
     }
 
     @Override
     public OpIterator[] getChildren() {
-        // some code goes here
-        return null;
+        return new OpIterator[] {child};
     }
 
     @Override
     public void setChildren(OpIterator[] children) {
-        // some code goes here
+        child = children[0];
     }
 
 }
